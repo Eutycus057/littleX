@@ -1,11 +1,13 @@
 import tweetReducer from "./tweetSlice";
 import { configureStore } from "@reduxjs/toolkit";
 import usersReducer from "./userSlice";
+import { analyticsReducer } from "@/modules/analytics";
 
 export const store = configureStore({
   reducer: {
     users: usersReducer,
     tweet: tweetReducer,
+    analytics: analyticsReducer,
   },
 });
 

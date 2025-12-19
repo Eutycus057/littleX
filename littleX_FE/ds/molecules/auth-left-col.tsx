@@ -1,13 +1,12 @@
 import React from "react";
 import AppLogo from "../atoms/app-logo";
-import { Baumans } from "next/font/google";
+// import { Inter } from "next/font/google"; // Disabled due to network issues
 import { cn } from "@/_core/utils";
 
-const banumas = Baumans({
-  weight: "400",
-  subsets: ["latin"],
-  style: "normal",
-});
+// const inter = Inter({
+//   weight: "400",
+//   subsets: ["latin"],
+// });
 interface AuthLeftColProps {
   title?: string;
   subtitle?: string;
@@ -23,7 +22,7 @@ export const AuthLeftCol = ({
         <div className="flex items-center justify-center">
           <AppLogo />
         </div>
-        <h1 className={cn("text-3xl font-bold ", banumas.className)}>
+        <h1 className={cn("text-3xl font-bold font-sans")}>
           {title}
         </h1>
         <p className="text-muted-foreground">{subtitle}</p>

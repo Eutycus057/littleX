@@ -45,27 +45,20 @@ export function useAuth() {
 
   useEffect(() => {
     if (success) {
-      if (successMessage === "Login successful") {
-        router.navigate("/");
-      } else if (successMessage === "Registration successful") {
-        router.navigate("/auth/login");
-      } else if (successMessage === "Logout successful") {
-        router.navigate("/auth/login");
-      }
       dispatch(resetSuccess());
     }
-  }, [success, successMessage, router, dispatch]);
+  }, [success, dispatch]);
 
   const login = useCallback(
     async (email: string, password: string) => {
-      dispatch(loginUser({ email, password }));
+      await dispatch(loginUser({ email, password })).unwrap();
     },
     [dispatch]
   );
 
   const register = useCallback(
     async (email: string, password: string) => {
-      dispatch(registerUser({ email, password }));
+      await dispatch(registerUser({ email, password })).unwrap();
     },
     [dispatch]
   );

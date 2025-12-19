@@ -8,6 +8,8 @@ import {
   MoreVertical,
   Share2,
   MessageSquare,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "../atoms/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../atoms/avatar";
@@ -35,7 +37,7 @@ import {
 import { Button } from "../atoms/button";
 import { Input } from "../atoms/input";
 import { Textarea } from "../atoms/textarea";
-import { JSX, useState } from "react";
+import { JSX, useState, useEffect } from "react";
 import { useAppDispatch } from "@/store/useStore";
 import {
   deleteTweetAction,
@@ -44,6 +46,8 @@ import {
   addCommentAction,
   updateCommentAction,
   deleteCommentAction,
+  smartReplyAction,
+  summarizeThreadAction,
 } from "@/modules/tweet";
 import { Comment } from "@/nodes/tweet-node";
 import { cn } from "@/_core/utils";
@@ -66,6 +70,9 @@ export interface TweetCardProps {
   comments: Comment[];
   profile: User;
   created_at?: string;
+  images?: string[];
+  videos?: string[];
+  docs?: string[];
 }
 
 interface LikesDialogProps {
@@ -86,6 +93,11 @@ interface CommentsDialogProps {
   handleSubmitComment: () => void;
   editingComment: Comment | null;
   onCancelEdit: () => void;
+  onSmartReply: () => void;
+  onSummarize: () => void;
+  threadSummary: string;
+  isSummarizing: boolean;
+  isSmartReplying: boolean;
 }
 
 interface ActionDropdownProps {
@@ -145,15 +157,45 @@ function CommentsDialog({
   handleSubmitComment,
   editingComment,
   onCancelEdit,
+  onSmartReply,
+  onSummarize,
+  threadSummary,
+  isSummarizing,
+  isSmartReplying,
 }: CommentsDialogProps): JSX.Element {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle>Comments</DialogTitle>
+          {comments.length > 2 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSummarize}
+              disabled={isSummarizing}
+              className="gap-2 h-7 text-xs mr-6"
+            >
+              <Sparkles size={12} className="text-purple-500" />
+              {isSummarizing ? "Summarizing..." : "Summarize Thread"}
+            </Button>
+          )}
         </DialogHeader>
+
+        {threadSummary && (
+          <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-md text-sm mb-2 border border-purple-100 dark:border-purple-800">
+            <div className="flex items-center gap-2 mb-1 font-semibold text-purple-700 dark:text-purple-300">
+              <Sparkles size={14} />
+              AI Summary
+            </div>
+            <p className="text-muted-foreground">{threadSummary}</p>
+          </div>
+        )}
+
         <div className="space-y-2 max-h-60 overflow-y-auto">
           {comments.length > 0 ? (
+            // ... (rest of comments list)
+
             <div className="overflow-y-auto pr-1 max-h-[60vh]">
               {comments.map((comment) => (
                 <div key={comment.id} className="flex gap-3">
@@ -173,22 +215,22 @@ function CommentsDialog({
                         </span>
                         {comment.username.toLowerCase() ===
                           loginUsername.toLowerCase() && (
-                          <ActionDropdown
-                            onEdit={() => onEditComment(comment)}
-                            onDelete={() => onDeleteComment(comment.id)}
-                          />
-                        )}
+                            <ActionDropdown
+                              onEdit={() => onEditComment(comment)}
+                              onDelete={() => onDeleteComment(comment.id)}
+                            />
+                          )}
                       </div>
                       <p className="text-sm mt-1">{comment.content}</p>
                     </div>
-                    <div className="flex gap-4 mt-1 ml-1">
+                    {/* <div className="flex gap-4 mt-1 ml-1">
                       <button className="text-xs text-muted-foreground hover:text-foreground">
                         Like
                       </button>
                       <button className="text-xs text-muted-foreground hover:text-foreground">
                         Reply
                       </button>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               ))}
@@ -224,6 +266,21 @@ function CommentsDialog({
               />
               <AvatarFallback>{loginUsername[0].toUpperCase()}</AvatarFallback>
             </Avatar>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:text-purple-500"
+              onClick={onSmartReply}
+              title="Magic Reply"
+              disabled={isSmartReplying}
+            >
+              {isSmartReplying ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Sparkles size={16} />
+              )}
+            </Button>
             <Input
               type="text"
               value={commentInputValue}
@@ -288,12 +345,16 @@ export function TweetCard({
   comments,
   profile,
   created_at,
+  images = [],
+  videos = [],
+  docs = [],
 }: TweetCardProps): JSX.Element {
   const dispatch = useAppDispatch();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
   const [isLikesDialogOpen, setIsLikesDialogOpen] = useState<boolean>(false);
   const [isCommentsDialogOpen, setIsCommentsDialogOpen] =
     useState<boolean>(false);
+  const [isSmartReplying, setIsSmartReplying] = useState<boolean>(false);
 
   // Combined state for both adding and editing comments
   const [commentInputValue, setCommentInputValue] = useState<string>("");
@@ -339,6 +400,18 @@ export function TweetCard({
     setCommentInputValue("");
   };
 
+  const handleSmartReply = async () => {
+    setIsSmartReplying(true);
+    try {
+      const result = await dispatch(smartReplyAction(content)).unwrap();
+      if (result) {
+        setCommentInputValue(result);
+      }
+    } finally {
+      setIsSmartReplying(false);
+    }
+  };
+
   const handleDeleteComment = (commentId: string): void => {
     dispatch(deleteCommentAction({ tweetId: id, id: commentId }));
   };
@@ -352,9 +425,33 @@ export function TweetCard({
     setEditingComment(null);
     setCommentInputValue("");
   };
+
+  const [threadSummary, setThreadSummary] = useState<string>("");
+  const [isSummarizing, setIsSummarizing] = useState<boolean>(false);
+
+  const handleSummarizeThread = async () => {
+    if (comments.length === 0) return;
+    setIsSummarizing(true);
+    try {
+      const commentTexts = comments.map(c => `${c.username}: ${c.content}`);
+      const result = await dispatch(summarizeThreadAction(commentTexts)).unwrap();
+      setThreadSummary(result);
+    } catch (error) {
+      console.error("Failed to summarize thread", error);
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const timeAgo = created_at
     ? getTimeDifference(created_at)
     : getTimeDifference(new Date().toUTCString());
+
   return (
     <>
       <Card className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
@@ -366,7 +463,7 @@ export function TweetCard({
             </Avatar>
             <div>
               <h3 className="font-semibold text-card-foreground">{username}</h3>
-              <p className="text-sm text-muted-foreground">{timeAgo}</p>
+              <p className="text-sm text-muted-foreground">{mounted ? timeAgo : ""}</p>
             </div>
           </div>
           {username.toLowerCase() === loginUsername.toLowerCase() && (
@@ -380,6 +477,45 @@ export function TweetCard({
           <p className="text-card-foreground mb-2 whitespace-pre-wrap wrap">
             {content}
           </p>
+
+          {/* Media Rendering */}
+          {(images.length > 0 || videos.length > 0) && (
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {images.map((img, i) => (
+                <img
+                  key={`img-${i}`}
+                  src={img}
+                  alt={`Tweet image ${i + 1}`}
+                  className="rounded-md w-full h-auto object-cover max-h-60"
+                />
+              ))}
+              {videos.map((vid, i) => (
+                <video
+                  key={`vid-${i}`}
+                  src={vid}
+                  controls
+                  className="rounded-md w-full h-auto max-h-60 bg-black"
+                />
+              ))}
+            </div>
+          )}
+
+          {docs.length > 0 && (
+            <div className="flex flex-col gap-1 mb-3">
+              {docs.map((doc, i) => (
+                <a
+                  key={`doc-${i}`}
+                  href={doc}
+                  download={`document-${i + 1}`} // Or try to determine extension
+                  className="flex items-center gap-2 p-2 rounded-md bg-muted hover:bg-muted/80 transition-colors"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="text-sm font-medium truncate max-w-[200px]">Document {i + 1}</span>
+                </a>
+              ))}
+            </div>
+          )}
           {/* <div className="flex flex-wrap gap-1.5 mb-3">
             {Array(3)
               .fill(0)
@@ -408,9 +544,8 @@ export function TweetCard({
                 />
                 <button
                   onClick={() => setIsLikesDialogOpen(true)}
-                  className={`hover:text-foreground text-nowrap ${
-                    liked ? "text-foreground" : "text-muted-foreground"
-                  }`}
+                  className={`hover:text-foreground text-nowrap ${liked ? "text-foreground" : "text-muted-foreground"
+                    }`}
                 >
                   {likes.length} Likes
                 </button>
@@ -433,6 +568,21 @@ export function TweetCard({
               />
               <AvatarFallback>{loginUsername[0].toUpperCase()}</AvatarFallback>
             </Avatar>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:text-purple-500"
+              onClick={handleSmartReply}
+              title="Magic Reply"
+              disabled={isSmartReplying}
+            >
+              {isSmartReplying ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Sparkles size={16} />
+              )}
+            </Button>
             <Input
               type="text"
               value={commentInputValue}
@@ -479,6 +629,11 @@ export function TweetCard({
         handleSubmitComment={handleSubmitComment}
         editingComment={editingComment}
         onCancelEdit={cancelEditComment}
+        onSmartReply={handleSmartReply}
+        onSummarize={handleSummarizeThread}
+        threadSummary={threadSummary}
+        isSummarizing={isSummarizing}
+        isSmartReplying={isSmartReplying}
       />
     </>
   );

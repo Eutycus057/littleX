@@ -25,11 +25,12 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormProps = {}) {
 
   const router = useAppNavigation();
 
-  useEffect(() => {
-    if (initialCheckComplete && !isLoading && isAuthenticated) {
-      router.navigate(APP_ROUTES.HOME);
-    }
-  }, [isLoading, isAuthenticated, router, initialCheckComplete]);
+  // Redirect logic removed to prevent loop with TweetPage
+  // useEffect(() => {
+  //   if (initialCheckComplete && !isLoading && isAuthenticated) {
+  //     router.navigate(APP_ROUTES.HOME);
+  //   }
+  // }, [isLoading, isAuthenticated, router, initialCheckComplete]);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
@@ -42,6 +43,7 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormProps = {}) {
 
   const onSubmit = async (values: RegisterFormValues) => {
     await registerUser(values.email, values.password);
+    router.navigate(APP_ROUTES.LOGIN);
     if (onSuccess) onSuccess();
   };
 

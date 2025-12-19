@@ -7,14 +7,15 @@ import {
   searchTweetsAction,
   unFollowRequestAction,
   useTweets,
+  getUserProfileAction,
 } from "@/modules/tweet";
 import { useAuth } from "@/modules/users/hooks/use-auth";
 import { useAppDispatch } from "@/store/useStore";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 
 export type NavMenu = {
   id: number;
-  name: "Home" | "My Tweets" | "Settings"; // Limited to known menu items
+  name: "Home" | "My Tweets" | "Settings" | "Analytics" | "Communities";
 
   route: string; // Changed from 'param' to 'route' for clarity
   count?: number; // Made optional since not all menu items need counts
@@ -24,8 +25,10 @@ export const useDashboard = () => {
   const {
     profile,
     userProfiles,
+
     items: feeds,
     isLoading,
+    error,
     searchResult,
   } = useTweets();
   const { data, logout } = useAuth();
@@ -44,6 +47,13 @@ export const useDashboard = () => {
   const userTweets = feeds.filter(
     (item) => item.username === userData.username
   );
+
+  // Automatically fetch profile if missing (fixes infinite loading)
+  useEffect(() => {
+    if (profile?.user?.username === "" && !isLoading) {
+      dispatch(getUserProfileAction());
+    }
+  }, [profile?.user?.username, isLoading, dispatch]);
 
   // Navigation menu for main dashboard
   const navMenu: NavMenu[] = useMemo(
@@ -64,6 +74,20 @@ export const useDashboard = () => {
       },
       {
         id: 3,
+        name: "Communities",
+        route: "/communities",
+        count: 0,
+        isActive: currentPath.includes("communities"),
+      },
+      {
+        id: 5,
+        name: "Analytics",
+        route: "/?tab=analytics",
+        count: 0,
+        isActive: currentTab === "analytics",
+      },
+      {
+        id: 4,
         name: "Settings",
         route: "/settings",
         count: 0,
@@ -99,8 +123,10 @@ export const useDashboard = () => {
     userTweets,
     feeds,
     isLoading,
+    error,
     navMenu,
     currentTab,
+
     searchResult,
 
     // Methods

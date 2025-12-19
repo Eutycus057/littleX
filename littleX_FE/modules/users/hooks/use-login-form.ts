@@ -33,6 +33,7 @@ export function useLoginForm({ onSuccess }: UseLoginFormProps = {}) {
 
   const onSubmit = async (values: LoginFormValues) => {
     await login(values.email, values.password);
+    router.navigate(APP_ROUTES.HOME);
     if (onSuccess) onSuccess();
   };
 

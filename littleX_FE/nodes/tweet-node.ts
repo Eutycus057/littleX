@@ -5,7 +5,10 @@ export interface TweetNode {
   embedding: number[];
   likes: string[]; // or array of user IDs
   comments: Comment[]; // or array of comment IDs
-  created_at?: "";
+  created_at?: string;
+  images?: string[];
+  videos?: string[];
+  docs?: string[];
 }
 export interface Comment {
   id: string;

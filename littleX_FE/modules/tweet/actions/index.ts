@@ -16,9 +16,13 @@ export const fetchTweetsAction = createAsyncThunk(
 );
 export const createTweetAction = createAsyncThunk(
   "tweet/create",
-  async (content: string, { rejectWithValue }) => {
+  async (payload: string | { content: string; communityId?: string; media?: { images: string[]; videos: string[]; docs: string[] } }, { rejectWithValue }) => {
     try {
-      const response = await TweetApi.createTweet(content);
+      const content = typeof payload === "string" ? payload : payload.content;
+      const communityId = typeof payload === "string" ? undefined : payload.communityId;
+      const media = typeof payload === "string" ? undefined : payload.media;
+
+      const response = await TweetApi.createTweet(content, communityId, media);
 
       return response;
     } catch (error) {
@@ -245,6 +249,90 @@ export const deleteCommentAction = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to delete comment"
+      );
+    }
+  }
+);
+
+export const fetchTrendingTopicsAction = createAsyncThunk(
+  "tweet/fetchTrendingTopics",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await TweetApi.getTrendingTopics();
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to fetch Trending Topics"
+      );
+    }
+  }
+);
+
+export const generateHashtagsAction = createAsyncThunk(
+  "tweet/generateHashtags",
+  async (content: string, { rejectWithValue }) => {
+    try {
+      const response = await TweetApi.generateHashtags(content);
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to generate hashtags"
+      );
+    }
+  }
+);
+
+export const smartReplyAction = createAsyncThunk(
+  "tweet/smartReply",
+  async (context: string, { rejectWithValue }) => {
+    try {
+      const response = await TweetApi.smartReply(context);
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to generate smart reply"
+      );
+    }
+  }
+);
+
+export const summarizeThreadAction = createAsyncThunk(
+  "tweet/summarizeThread",
+  async (comments: string[], { rejectWithValue }) => {
+    try {
+      const response = await TweetApi.summarizeThread(comments);
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to summarize thread"
+      );
+    }
+  }
+);
+
+export const refineTweetAction = createAsyncThunk(
+  "tweet/refineTweet",
+  async (content: string, { rejectWithValue }) => {
+    try {
+      const response = await TweetApi.refineTweet(content);
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to refine tweet"
+      );
+    }
+  }
+);
+
+export const suggestTweetContentAction = createAsyncThunk(
+  "tweet/suggestContent",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await TweetApi.suggestTweetContent();
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to suggest tweet content"
       );
     }
   }

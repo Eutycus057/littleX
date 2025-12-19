@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Menu,
   X,
@@ -6,8 +6,11 @@ import {
   Home,
   Bird,
   Settings,
+  Users,
   SunIcon,
   MoonIcon,
+  ChartBar,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/_core/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../atoms/avatar";
@@ -15,7 +18,7 @@ import { Button } from "../atoms/button";
 import { Input } from "../atoms/input";
 import useAppNavigation from "@/_core/hooks/useAppNavigation";
 import AppLogo from "../atoms/app-logo";
-import { Baumans } from "next/font/google";
+// import { Inter } from "next/font/google"; // Disabled
 import { User } from "@/store/tweetSlice";
 import {
   Sheet,
@@ -25,12 +28,14 @@ import {
   SheetTrigger,
 } from "../atoms/sheet";
 import { useAppTheme } from "../use-app-theme";
+import { useAppDispatch, useAppSelector } from "@/store/useStore";
+import { fetchTrendingTopicsAction } from "@/modules/tweet";
 
-const banumas = Baumans({
-  weight: "400",
-  subsets: ["latin"],
-  style: "normal",
-});
+// const inter = Inter({
+//   weight: "400",
+//   subsets: ["latin"],
+//   style: "normal",
+// });
 
 // Mobile Nav Bar component for the top of the screen
 export const MobileNavBar = ({
@@ -66,7 +71,8 @@ export const MobileNavBar = ({
         <span
           className={cn(
             "font-bold text-xl hidden sm:block text-sidebar-foreground",
-            banumas.className
+            // inter.className
+            "font-sans"
           )}
         >
           LITTLE X
@@ -117,6 +123,7 @@ export const MobileLeftSidebar = ({
   userData: { username: string; email: string };
 }) => {
   const navigation = useAppNavigation();
+  const [loadingItem, setLoadingItem] = useState<string | null>(null);
 
   const navMenu = [
     {
@@ -133,14 +140,34 @@ export const MobileLeftSidebar = ({
     },
     {
       id: 3,
+      name: "Communities",
+      icon: <Users className="w-5 h-5" />,
+      route: "/communities",
+    },
+    {
+      id: 5,
+      name: "Analytics",
+      icon: <ChartBar className="w-5 h-5" />,
+      route: "/?tab=analytics",
+    },
+    {
+      id: 4,
       name: "Settings",
       icon: <Settings className="w-5 h-5" />,
       route: "/settings",
     },
   ];
 
-  const handleNavigation = (route: string) => {
-    navigation.navigate(route);
+  const handleNavigation = (name: string, route: string) => {
+    if (name === "Communities" || name === "Analytics") {
+      setLoadingItem(name);
+      setTimeout(() => {
+        setLoadingItem(null);
+        navigation.navigate(route);
+      }, 500);
+    } else {
+      navigation.navigate(route);
+    }
   };
 
   return (
@@ -187,12 +214,17 @@ export const MobileLeftSidebar = ({
               {navMenu.map((menu) => (
                 <li key={menu.id}>
                   <button
-                    onClick={() => handleNavigation(menu.route)}
+                    onClick={() => handleNavigation(menu.name, menu.route)}
                     className="w-full flex items-center justify-between px-3 py-3 text-sidebar-foreground rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group transition-colors"
+                    disabled={loadingItem === menu.name}
                   >
                     <div className="flex items-center space-x-3">
                       <span className="w-5 h-5 text-muted-foreground group-hover:text-sidebar-accent-foreground transition-colors">
-                        {menu.icon}
+                        {loadingItem === menu.name ? (
+                          <Loader2 className="animate-spin w-5 h-5" />
+                        ) : (
+                          menu.icon
+                        )}
                       </span>
                       <span className="text-sm font-medium">{menu.name}</span>
                     </div>
@@ -260,9 +292,15 @@ export const MobileRightSidebar = ({
   onUnfollow: (id: string) => void;
 }) => {
   const { toggleTheme, isDark } = useAppTheme();
+  const dispatch = useAppDispatch();
+  const { trendingTopics } = useAppSelector((state) => state.tweet);
 
-  const [activeTab, setActiveTab] = useState<"suggested" | "following">(
-    "suggested"
+  useEffect(() => {
+    dispatch(fetchTrendingTopicsAction());
+  }, [dispatch]);
+
+  const [activeTab, setActiveTab] = useState<"suggested" | "following" | "trending">(
+    "trending"
   );
 
   return (
@@ -287,21 +325,32 @@ export const MobileRightSidebar = ({
             {/* Tab Navigation */}
             <SheetHeader>
               <SheetTitle>
-                <div className="flex border-b border-sidebar-border">
+                <div className="flex border-b border-sidebar-border overflow-x-auto">
                   <button
                     className={cn(
-                      "flex-1 py-3 text-center text-sm font-medium",
+                      "flex-1 py-3 text-center text-sm font-medium min-w-[33%]",
+                      activeTab === "trending"
+                        ? "border-b-2 border-blue-500"
+                        : ""
+                    )}
+                    onClick={() => setActiveTab("trending")}
+                  >
+                    Trending
+                  </button>
+                  <button
+                    className={cn(
+                      "flex-1 py-3 text-center text-sm font-medium min-w-[33%]",
                       activeTab === "suggested"
                         ? "border-b-2 border-blue-500"
                         : ""
                     )}
                     onClick={() => setActiveTab("suggested")}
                   >
-                    Suggested For You
+                    Suggested
                   </button>
                   <button
                     className={cn(
-                      "flex-1 py-3 text-center text-sm font-medium",
+                      "flex-1 py-3 text-center text-sm font-medium min-w-[33%]",
                       activeTab === "following"
                         ? "border-b-2 border-blue-500"
                         : ""
@@ -316,6 +365,23 @@ export const MobileRightSidebar = ({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4">
+              {activeTab === "trending" && (
+                <div className="space-y-3">
+                  {trendingTopics && trendingTopics.length > 0 ? (
+                    trendingTopics.map((topic, index) => (
+                      <div key={index} className="flex justify-between items-center group cursor-pointer hover:bg-white/5 p-2 rounded-md transition-colors">
+                        <div>
+                          <p className="text-sm font-bold text-sidebar-foreground">#{topic.name}</p>
+                          <p className="text-xs text-muted-foreground">{topic.score} tweets</p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No trends yet.</p>
+                  )}
+                </div>
+              )}
+
               {activeTab === "suggested" && (
                 <div className="space-y-4">
                   {suggestions.map((user, index) => (

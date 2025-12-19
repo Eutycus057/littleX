@@ -18,7 +18,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     if (initialCheckComplete && !isLoading && !isAuthenticated) {
-      router.push(APP_ROUTES.LOGIN);
+      router.push(APP_ROUTES.REGISTER);
     }
   }, [isLoading, isAuthenticated, router, initialCheckComplete]);
 

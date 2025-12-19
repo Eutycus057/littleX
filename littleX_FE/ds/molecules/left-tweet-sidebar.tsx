@@ -6,8 +6,8 @@ import React, {
   RefAttributes,
   useState,
 } from "react";
-import { Search, LogOutIcon, LucideProps, CircleIcon } from "lucide-react";
-import { Baumans } from "next/font/google";
+import { Search, LogOutIcon, LucideProps, CircleIcon, ChartBar, Loader2 } from "lucide-react";
+// import { Inter } from "next/font/google"; // Disabled
 import { cn } from "@/_core/utils";
 import AppLogo from "../atoms/app-logo";
 import { Avatar, AvatarFallback, AvatarImage } from "../atoms/avatar";
@@ -16,14 +16,14 @@ import { Input } from "../atoms/input";
 import { useAppDispatch } from "@/store/useStore";
 import { searchTweetsAction } from "@/modules/tweet";
 import useAppNavigation from "@/_core/hooks/useAppNavigation";
-import { Bird, Home, Settings } from "lucide-react";
+import { Bird, Home, Settings, Users } from "lucide-react";
 import { NavMenu } from "@/_core/hooks/useDashboard";
 
-const banumas = Baumans({
-  weight: "400",
-  subsets: ["latin"],
-  style: "normal",
-});
+// const inter = Inter({
+//   weight: "400",
+//   subsets: ["latin"],
+//   style: "normal",
+// });
 
 interface LeftTweetSidebarProps {
   userData: {
@@ -44,6 +44,7 @@ const LeftTweetSidebar = ({
   const dispatch = useAppDispatch();
   const navigation = useAppNavigation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [loadingItem, setLoadingItem] = useState<string | null>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,8 +55,17 @@ const LeftTweetSidebar = ({
   };
 
   // Better navigation handler
-  const handleNavigation = (route: string) => {
-    navigation.navigate(route);
+  const handleNavigation = (name: string, route: string) => {
+    if (name === "Communities" || name === "Analytics") {
+      setLoadingItem(name);
+      // Simulate loading/navigation delay or just wait for navigation
+      setTimeout(() => {
+        setLoadingItem(null);
+        navigation.navigate(route);
+      }, 500);
+    } else {
+      navigation.navigate(route);
+    }
   };
 
   const navIcon: Record<
@@ -67,7 +77,10 @@ const LeftTweetSidebar = ({
     Home: Home,
     "My Tweets": Bird,
     Settings: Settings,
+    Communities: Users,
+    Analytics: ChartBar,
   };
+
 
   return (
     <div className="w-full h-screen flex flex-col">
@@ -78,7 +91,8 @@ const LeftTweetSidebar = ({
           <span
             className={cn(
               "font-bold text-[28px] text-sidebar-foreground mt-1",
-              banumas.className
+              // inter.className
+              "font-sans"
             )}
           >
             LITTLE X
@@ -111,12 +125,13 @@ const LeftTweetSidebar = ({
             return (
               <li key={menu.id}>
                 <button
-                  onClick={() => handleNavigation(menu.route)}
+                  onClick={() => handleNavigation(menu.name, menu.route)}
                   className={cn(
                     "w-full flex items-center justify-between px-3 py-2 text-sidebar-foreground rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group transition-colors",
                     isActive &&
-                      "bg-sidebar-accent text-sidebar-accent-foreground"
+                    "bg-sidebar-accent text-sidebar-accent-foreground"
                   )}
+                  disabled={loadingItem === menu.name}
                 >
                   <div className="flex items-center space-x-3">
                     <span
@@ -125,7 +140,11 @@ const LeftTweetSidebar = ({
                         isActive && "text-sidebar-accent-foreground"
                       )}
                     >
-                      <IconComponent />
+                      {loadingItem === menu.name ? (
+                        <Loader2 className="animate-spin w-5 h-5" />
+                      ) : (
+                        <IconComponent />
+                      )}
                     </span>
                     <span className="text-sm font-medium">{menu.name}</span>
                   </div>

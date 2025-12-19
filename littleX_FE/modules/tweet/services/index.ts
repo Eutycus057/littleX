@@ -9,7 +9,7 @@ export const TweetApi = {
     const data = res.data?.reports?.[0] || [];
 
     return data.map((entry: any) => {
-      const tweet = entry?.Tweet_Info?.context;
+      const tweet = entry?.Tweet_Info?.context || entry?.Tweet_Info;
       return {
         id: tweet?.id,
         username: tweet?.username ?? "",
@@ -17,6 +17,10 @@ export const TweetApi = {
         embedding: tweet?.embedding ?? [],
         likes: Array.isArray(tweet?.likes) ? tweet.likes : [],
         comments: Array.isArray(tweet?.comments) ? tweet.comments : [],
+        images: tweet?.images ?? [],
+        videos: tweet?.videos ?? [],
+        docs: tweet?.docs ?? [],
+        created_at: tweet?.created_at ?? "",
       } as TweetNode;
     }) as TweetNode[];
   },
@@ -28,7 +32,7 @@ export const TweetApi = {
     const data = res.data?.reports?.[0] || [];
 
     const result = data.map((entry: any) => {
-      const tweet = entry?.Tweet_Info?.context;
+      const tweet = entry?.Tweet_Info?.context || entry?.Tweet_Info;
       return {
         id: tweet?.id,
         username: tweet?.username ?? "",
@@ -36,15 +40,27 @@ export const TweetApi = {
         embedding: tweet?.embedding ?? [],
         likes: Array.isArray(tweet?.likes) ? tweet.likes : [],
         comments: Array.isArray(tweet?.comments) ? tweet.comments : [],
+        images: tweet?.images ?? [],
+        videos: tweet?.videos ?? [],
+        docs: tweet?.docs ?? [],
+        created_at: tweet?.created_at ?? "",
       } as TweetNode;
     }) as TweetNode[];
 
     return result;
   },
 
-  createTweet: async (content: string) => {
+  createTweet: async (
+    content: string,
+    community_id?: string,
+    media?: { images: string[]; videos: string[]; docs: string[] }
+  ) => {
     const response = await private_api.post("/walker/create_tweet", {
       content,
+      community_id,
+      images: media?.images || [],
+      videos: media?.videos || [],
+      docs: media?.docs || [],
     });
     const tweets = response.data?.reports || [];
     const tweet = tweets[0]?.[0] || {};
@@ -57,6 +73,9 @@ export const TweetApi = {
       likes: [],
       username: "",
       created_at: tweet?.context?.created_at || "",
+      images: tweet?.context?.images || [],
+      videos: tweet?.context?.videos || [],
+      docs: tweet?.context?.docs || [],
     };
 
     return tweetData;
@@ -112,7 +131,7 @@ export const TweetApi = {
     // Map and filter users that are not already followed
     const users: User[] = data.map((entry: any) => ({
       id: entry?.id,
-      username: entry?.name ?? "",
+      username: entry?.username ?? "",
     }));
     return users;
   },
@@ -137,12 +156,29 @@ export const TweetApi = {
   getProfile: async () => {
     const response = await private_api.post("/walker/get_profile", {});
 
-    const data = response.data?.reports?.[0] || [];
+    const data = response.data?.reports?.[0];
+
+    if (!data) {
+      return {
+        following: [],
+        user: {
+          id: "",
+          username: "",
+        }
+      };
+    }
+
+    const userNode = data.user || data;
+    const following = data.following || data.followers || [];
+
     const profile: UserProfile = {
-      following: data.followers,
+      following: following,
+      tweets_count: data.tweets_count || 0,
+      following_count: data.following_count || 0,
+      followers_count: data.followers_count || 0,
       user: {
-        id: data.user.id,
-        username: data.user.context.username,
+        id: userNode.id || "",
+        username: userNode.context?.username || userNode.username || "",
       },
     };
     return profile;
@@ -238,5 +274,62 @@ export const TweetApi = {
   deleteCommentTweet: async (tweetId: string, id: string) => {
     const response = await private_api.post(`/walker/remove_comment/${id}`, {});
     return response.data.status === 200 ? { tweetId, id } : null;
+  },
+
+  getTrendingTopics: async () => {
+    const response = await private_api.post("/walker/get_trending_topics", {});
+    const reports = response.data?.reports;
+    // Assuming reports[0] is the list of topics: [{name: "jaclang", score: 5.0}, ...]
+    const data = Array.isArray(reports) && Array.isArray(reports[0]) ? reports[0] : [];
+    return data;
+  },
+
+  generateHashtags: async (content: string) => {
+    const response = await private_api.post("/walker/generate_hashtags", { content });
+    const reports = response.data?.reports;
+    // Handle list of strings (single result) or list of lists
+    if (Array.isArray(reports) && reports.length > 0) {
+      if (typeof reports[0] === 'string') {
+        return reports;
+      }
+      if (Array.isArray(reports[0])) {
+        return reports[0];
+      }
+    }
+    return [];
+  },
+
+  smartReply: async (context: string): Promise<string> => {
+    const { data } = await private_api.post("/walker/smart_reply", {
+      context,
+    });
+    return data.reports[0];
+  },
+
+  async summarizeThread(comments: string[]): Promise<string> {
+    const { data } = await private_api.post("/walker/summarize_conversation", {
+      comments,
+    });
+    return data.reports[0];
+  },
+
+  async refineTweet(content: string): Promise<string> {
+    const { data } = await private_api.post("/walker/refine_tweet", {
+      content,
+    });
+    return data.reports[0];
+  },
+
+  async suggestTweetContent(): Promise<string> {
+    const { data } = await private_api.post("/walker/suggest_tweet_content", {});
+    return data.reports[0];
+  },
+
+  async autocompleteText(text: string, context_type: string = "tweet"): Promise<string> {
+    const { data } = await private_api.post("/walker/autocomplete_text", {
+      text,
+      context_type
+    });
+    return data.reports[0];
   },
 };

@@ -1,55 +1,95 @@
-# LittleX: A Minimalistic Social Media Platform Prototype
+# LittleX: AI-Native Social Media Platform
 
-LittleX is a lightweight social media application developed using the **Jaseci Stack**. It serves as a demonstration of how Jaseci Stack can be utilized to build scalable and intelligent applications.
+LittleX is a next-generation social media application built on the **Jaseci (Jac) Stack**. It demonstrates the power of **Graph-based architectures** combined with **Generative AI Agents** to create a deeper, smarter social experience.
 
-## **About LittleX**
+> **Project 3 Compliant**: This project implements advanced social features including Community Building, Predictive Analytics, and AI Assistants.
 
-LittleX is a minimalistic implementation of a **social media platform** that showcases the capabilities of the Jaseci Stack. It includes features such as:
+---
 
-1. **User Profiles**:
-   - Create and manage user accounts.
-   - Follow other users and track relationships.
+## 🌟 Key Features
 
-2. **Tweets**:
-   - Post, view, and interact with tweets.
+### 🧠 AI-Powered Agents
+-   **AI Autocomplete**: Intelligent sentence completion in the Tweet editor using `byLLM`.
+-   **Viral Prediction**: Real-time analysis of engagement velocity to predict and badge "**🔥 Viral**" content.
+-   **Optimal Posting Time**: Analytics engine suggesting the best 2-hour window for maximum engagement.
+-   **Generative Content**:
+    -   **Magic Drafts**: Generate tweet ideas based on trending topics.
+    -   **Refine Polish**: Rewrite tweets for better tone and impact.
+    -   **Smart Replies**: Context-aware reply suggestions for comments.
+    -   **Summarization**: Auto-summarize long discussion threads.
 
-3. **Comments and Likes**:
-   - Engage with tweets through comments and likes.
+### 🕸️ Graph Intelligence
+-   **Emerging Communities**: Algorithms identify and promote fast-growing micro-communities.
+-   **Hybrid Feed**: Curation mixing social connections (Following) with Topic Affinity and semantic search.
+-   **Deep Threading**: "Discussion Rooms" for focused, real-time community conversations.
 
-4. **AI-Powered Features**:
-   - Utilizes **MTLLM** for GPT-4o summarization and SentenceTransformer for semantic search, enhancing user interactions.
+### 📊 Interactive Analytics
+-   **Engagement Dashboard**: Track followers, likes, and comments.
+-   **Growth Insights**: Visualize top-performing content and viral scores.
 
-5. **Cloud Deployment**:
-   - Deploy workflows, walkers, and AI features to **Jac Cloud** for seamless scaling and execution.
+---
 
-## **LittleX Architecture**
+## 🏗️ Architecture
+
+LittleX uses a **multi-agent design** where specialized walkers act as autonomous agents interacting with the global graph.
+
+-   **Backend**: `littleX.jac` (Jaseci Language)
+    -   **Nodes**: `Profile`, `Tweet`, `Community`, `Room`, `Topic`.
+    -   **Edges**: `Follow`, `MemberOf`, `RelatesTo` (Weighted Context).
+    -   **Walkers**: `load_feed`, `suggest_tweet_content`, `autocomplete_text`, `verify_fixes`.
+-   **AI Integration**: `byLLM` library for seamless LLM calls (GPT-4o).
+-   **Frontend**: Next.js (React) + Redux Toolkit + TailwindCSS.
 
 ![Architecture](Documentation/images/Architecture.png)
 
+---
 
-## **Running LittleX on Local Environment**
+## 🚀 Getting Started
 
-### 1. Clone the Repository
+### Prerequisites
+-   Python 3.10+
+-   Node.js 18+
+-   `jaclang` and `jac-cloud` (optional for cloud deploy)
 
-Start by cloning the **LittleX** repository to your local system:
-
+### 1. Clone & Setup
 ```bash
-git clone https://github.com/Jaseci-Labs/littleX.git
-cd littlex
-```
-### 2. Install Dependencies
-```bash
-pip install -r littleX_BE/requirements.txt
+git clone https://github.com/Eutycus057/littleX.git
+cd littleX
 ```
 
-### 3. Start the Backend Server
+### 2. Backend (Jac)
+Install dependencies and start the Jac server:
 ```bash
-jac serve littleX_BE/littleX.jac
+cd littleX_BE
+pip install -r requirements.txt
+jac build littleX.jac
+jac serve littleX.jac
 ```
-### 4. Run the Frontend Server
-Open another command line
+*The server will run on `http://localhost:8000`*
+
+### 3. Frontend (Client)
+In a new terminal, start the Next.js client:
 ```bash
 cd littleX_FE
-npm i
+npm install
 npm run dev
 ```
+*The client will run on `http://localhost:3000`*
+
+---
+
+## 🧪 Verification & Testing
+
+To verify the system integrity and logic:
+
+```bash
+cd littleX_BE
+jac test verify_fixes.test.jac
+```
+
+## 🎥 Walkthrough
+Check out `walkthrough.md` for a detailed log of recent changes and validation steps.
+
+---
+
+**Built with ❤️ using Jac & Jaseci**

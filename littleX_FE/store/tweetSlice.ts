@@ -16,6 +16,8 @@ import {
   updateTweetAction,
   updateUserProfileAction,
   searchTweetsAction,
+  fetchTrendingTopicsAction,
+  suggestTweetContentAction,
 } from "@/modules/tweet";
 import { cosineSimilarity } from "@/modules/tweet/utils";
 import { toast, useToast } from "@/ds/atoms/hooks/use-toast";
@@ -27,6 +29,9 @@ export type User = {
 export type UserProfile = {
   user: User;
   following: User[];
+  tweets_count?: number;
+  following_count?: number;
+  followers_count?: number;
 };
 // export interface UserProfiles {
 //   id: string;
@@ -42,6 +47,9 @@ interface TweetState {
   error: string | null;
   success: boolean;
   successMessage: string | null;
+  trendingTopics: { name: string; score: number }[];
+  suggestedContent: string | null;
+  isSuggesting: boolean;
 }
 
 const initialState: TweetState = {
@@ -60,12 +68,15 @@ const initialState: TweetState = {
   error: null,
   success: false,
   successMessage: null,
+  trendingTopics: [],
+  suggestedContent: null,
+  isSuggesting: false,
 };
 
 export const tweetSlice = createSlice({
   name: "tweet",
   initialState,
-  reducers: {},
+
   extraReducers: (builder) => {
     builder.addCase(fetchTweetsAction.pending, (state) => {
       state.isLoading = true;
@@ -232,11 +243,11 @@ export const tweetSlice = createSlice({
       state.items = state.items.map((tweet) =>
         tweet.id === action.payload.id
           ? {
-              ...tweet,
-              likes: tweet.likes.filter(
-                (like) => like !== action.payload.username
-              ),
-            }
+            ...tweet,
+            likes: tweet.likes.filter(
+              (like) => like !== action.payload.username
+            ),
+          }
           : tweet
       );
       toast({
@@ -367,16 +378,16 @@ export const tweetSlice = createSlice({
       state.items = state.items.map((tweet) =>
         tweet.id === action.payload.tweetId
           ? {
-              ...tweet,
-              comments: [
-                ...(tweet.comments || []),
-                {
-                  ...action.payload.comment,
-                  comment: action.payload.comment ?? action.payload.comment,
-                  tweetId: action.payload.tweetId,
-                },
-              ],
-            }
+            ...tweet,
+            comments: [
+              ...(tweet.comments || []),
+              {
+                ...action.payload.comment,
+                comment: action.payload.comment ?? action.payload.comment,
+                tweetId: action.payload.tweetId,
+              },
+            ],
+          }
           : tweet
       );
       const tweetData = state.items.find(
@@ -411,13 +422,13 @@ export const tweetSlice = createSlice({
       state.items = state.items.map((tweet) =>
         tweet.id === action.payload.tweetId
           ? {
-              ...tweet,
-              comments: (tweet.comments || []).map((comment) =>
-                comment.id === action.payload.comment.id
-                  ? { ...comment, ...action.payload.comment }
-                  : comment
-              ),
-            }
+            ...tweet,
+            comments: (tweet.comments || []).map((comment) =>
+              comment.id === action.payload.comment.id
+                ? { ...comment, ...action.payload.comment }
+                : comment
+            ),
+          }
           : tweet
       );
     });
@@ -441,11 +452,11 @@ export const tweetSlice = createSlice({
       state.items = state.items.map((tweet) =>
         action.payload && tweet.id === action.payload.tweetId
           ? {
-              ...tweet,
-              comments: (tweet.comments || []).filter(
-                (comment) => comment.id !== action.payload?.id
-              ),
-            }
+            ...tweet,
+            comments: (tweet.comments || []).filter(
+              (comment) => comment.id !== action.payload?.id
+            ),
+          }
           : tweet
       );
     });
@@ -460,8 +471,43 @@ export const tweetSlice = createSlice({
       state.success = false;
       state.successMessage = null;
     });
+
+    builder.addCase(fetchTrendingTopicsAction.fulfilled, (state, action) => {
+      state.trendingTopics = action.payload;
+    });
+
+    // suggestTweetContent
+    builder.addCase(suggestTweetContentAction.pending, (state) => {
+      state.isSuggesting = true;
+      state.error = null;
+    });
+    builder.addCase(suggestTweetContentAction.fulfilled, (state, action) => {
+      state.isSuggesting = false;
+      state.suggestedContent = action.payload;
+      state.successMessage = "AI suggestion generated!";
+      toast({
+        title: "AI Suggestion Ready",
+        description: "Your tweet draft has been generated.",
+        duration: 3000,
+      });
+    });
+    builder.addCase(suggestTweetContentAction.rejected, (state, action) => {
+      state.isSuggesting = false;
+      state.error = action.payload as string;
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: action.payload as string,
+        duration: 5000,
+      });
+    });
+  },
+  reducers: {
+    clearSuggestedContent: (state) => {
+      state.suggestedContent = null;
+    },
   },
 });
 
-export const {} = tweetSlice.actions;
+export const { clearSuggestedContent } = tweetSlice.actions;
 export default tweetSlice.reducer;

@@ -8,7 +8,7 @@ interface LoginCredentials {
   password: string;
 }
 
-interface RegisterData extends LoginCredentials {}
+interface RegisterData extends LoginCredentials { }
 
 interface AuthResponse {
   token: string;
@@ -19,22 +19,34 @@ export const AuthService = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const response = await public_api.post("/user/login", credentials);
 
-    if (response.data.token) {
-      localStorageUtil.setItem(APP_KEYS.TOKEN, response.data.token);
-      localStorageUtil.setItem(APP_KEYS.USER, response.data.user);
+    let data = response.data;
+    // Handle Jaseci reports wrapper if present
+    if (data.reports && Array.isArray(data.reports) && data.reports.length > 0) {
+      data = data.reports[0];
     }
 
-    return response.data.user;
+    if (data.token) {
+      localStorageUtil.setItem(APP_KEYS.TOKEN, data.token);
+      localStorageUtil.setItem(APP_KEYS.USER, data.user);
+    }
+
+    return data;
   },
 
   register: async (data: RegisterData): Promise<AuthResponse> => {
     const response = await public_api.post("/user/register", data);
 
-    if (response.data.token) {
-      localStorageUtil.setItem(APP_KEYS.TOKEN, response.data.token);
+    let responseData = response.data;
+    // Handle Jaseci reports wrapper if present
+    if (responseData.reports && Array.isArray(responseData.reports) && responseData.reports.length > 0) {
+      responseData = responseData.reports[0];
     }
 
-    return response.data;
+    if (responseData.token) {
+      localStorageUtil.setItem(APP_KEYS.TOKEN, responseData.token);
+    }
+
+    return responseData;
   },
 
   logout: async (): Promise<void> => {

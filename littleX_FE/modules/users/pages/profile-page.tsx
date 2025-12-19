@@ -1,65 +1,118 @@
 "use client";
 
-import type { Metadata } from "next";
-import { ProfileSection } from "@/ds/organisms/profile-section";
-import { DashboardTemplate } from "@/ds/templates/dashboard-template";
-import { TaskHeader } from "@/ds/molecules/task-header";
-import { useAuth } from "../hooks/use-auth";
-import { useTweets } from "@/modules/tweet";
+import React from "react";
 import { ProtectedRoute } from "@/ds/wrappers/prtoected-auth";
+import ResponsiveDashboardTemplate from "@/ds/templates/responsive-dashboard-template";
+import LeftTweetSideBar from "@/ds/molecules/left-tweet-sidebar";
+import RightTweetSidebar from "@/ds/molecules/right-tweet-sidebar";
 import CheckProfile from "@/ds/molecules/check-profile-dialog";
-import { CustomHeaderSidebarMainTemplate } from "@/ds/templates/custom-header-sidebar-template";
-import { TweetHeader } from "@/ds/molecules/tweet-header";
-import TweetSideBar from "@/ds/molecules/tweet-sidebar";
 import { TweetCard } from "@/ds/organisms/tweet-card";
-import { useId } from "react";
-
-export const metadata: Metadata = {
-  title: "Profile | Little X",
-  description: "Manage your Little X profile",
-};
+import { useDashboard } from "@/_core/hooks/useDashboard";
+import {
+  MobileNavBar,
+  MobileBottomNav,
+  MobileRightSidebar,
+} from "@/ds/molecules/mobile-components";
+import { Loader2 } from "lucide-react";
 
 export default function ProfilePage() {
-  const id = useId();
+  const {
+    profile,
+    userData,
+    following,
+    suggestions,
+    isLoading,
+    navMenu,
+    logout,
+    handleSearch,
+    handleFollow,
+    handleUnfollow,
+    userTweets,
+  } = useDashboard();
 
-  const { logout } = useAuth();
-  const { isLoading, profile, items } = useTweets();
-  const following = profile.following;
-  const userData = profile.user;
-  const userTweets = items.filter(
-    (item) => item.username === userData.username
-  );
-  console.log(userTweets);
+  // Loading Skeleton
+  if (isLoading) {
+    return (
+      <ProtectedRoute>
+        <ResponsiveDashboardTemplate
+          leftSidebar={<div className="h-screen w-full bg-muted/20 animate-pulse" />}
+          rightSidebar={<div className="h-screen w-full bg-muted/20 animate-pulse" />}
+          main={
+            <div className="space-y-4 p-4">
+              <div className="h-8 w-1/3 bg-muted rounded animate-pulse" />
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-40 w-full bg-muted rounded-xl animate-pulse" />
+              ))}
+            </div>
+          }
+          sidebarWidth="w-72"
+        />
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute>
       {userData.username === "" ? (
         <CheckProfile open={true} isLoading={isLoading} />
       ) : (
-        <CustomHeaderSidebarMainTemplate
-          header={
-            <TweetHeader userData={userData} logout={logout} title="Little-X" />
+        <ResponsiveDashboardTemplate
+          // Mobile components
+          mobileNavBar={
+            <MobileNavBar userData={userData} onSearchSubmit={handleSearch} />
           }
-          sidebar={<TweetSideBar profiles={following} isLoading={isLoading} />}
+          mobileBottomNav={<MobileBottomNav />}
+          mobileRightSidebar={
+            <MobileRightSidebar
+              userData={userData}
+              following={following}
+              suggestions={suggestions}
+              onFollow={handleFollow}
+              onUnfollow={handleUnfollow}
+            />
+          }
+          // Desktop components
+          leftSidebar={
+            <LeftTweetSideBar
+              logout={logout}
+              userData={userData}
+              navMenu={navMenu}
+              currentRoute="/profile"
+            />
+          }
+          rightSidebar={
+            <RightTweetSidebar
+              userData={userData}
+              following={following}
+              suggetions={suggestions}
+            />
+          }
           main={
-            <div className="space-y-4">
-              <h1>My Tweets</h1>
-              {userTweets.map((feed) => (
-                <TweetCard
-                  key={feed.id + id}
-                  id={feed.id}
-                  username={feed.username}
-                  content={feed.content}
-                  comments={feed.comments}
-                  likes={feed.likes}
-                  profile={userData}
-                />
-              ))}
+            <div className="space-y-4 p-4 md:p-0">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h1 className="text-2xl font-bold">My Tweets</h1>
+                  <p className="text-muted-foreground">{userData.email}</p>
+                </div>
+              </div>
+
+              {userTweets.length > 0 ? (
+                userTweets.map((tweet) => (
+                  <TweetCard
+                    key={tweet.id}
+                    {...tweet}
+                    profile={profile.user}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-10 text-muted-foreground bg-card border rounded-xl p-8">
+                  <p>You haven't posted any tweets yet.</p>
+                </div>
+              )}
             </div>
           }
-          sidebarPosition="right"
-          maxWidth={true}
           sidebarWidth="w-72"
-        ></CustomHeaderSidebarMainTemplate>
+        />
       )}
     </ProtectedRoute>
   );
