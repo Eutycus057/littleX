@@ -41,6 +41,7 @@ LittleX uses a **multi-agent design** where specialized walkers act as autonomou
 -   **Frontend**: Next.js (React) + Redux Toolkit + TailwindCSS.
 
 ![Architecture](Documentation/images/Architecture.png)
+![littleX Demo].(https://youtu.be/MkZUrsQry28)
 
 ---
 
