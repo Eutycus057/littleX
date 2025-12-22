@@ -45,12 +45,6 @@ node Tweet {
 
     can delete with remove_tweet exit;
 
-    can like_tweet with like_tweet entry;
-
-    can remove_like with remove_like entry;
-
-    can comment with comment_tweet entry;
-
     def get_info()-> TweetInfo;
 
     can get with load_feed entry;
@@ -366,8 +360,8 @@ impl Profile.update {
 }
 
 impl Profile.get {
-        follwers=[{"id": get_object_id(i), "username": i.username} for i in [self-->(`?Profile)]];
-        report {"user": self, "followers": follwers};
+        followers=[{"id": get_object_id(i), "username": i.username} for i in [self-->(`?Profile)]];
+        report {"user": self, "followers": followers};
     }
 
 impl Profile.follow{
